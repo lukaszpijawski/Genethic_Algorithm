@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace GeneticAlgorithms
 {
-    abstract class AlgorytmGenetyczny<TypOsobnika>
+    public abstract class AlgorytmGenetyczny<TypOsobnika>
     {
         protected abstract TypOsobnika[] LosowaPopulacja(int rozmiar);
         protected abstract TypOsobnika Koniec(bool bestPossible = false);
@@ -15,7 +15,7 @@ namespace GeneticAlgorithms
         protected abstract TypOsobnika Mutacja(TypOsobnika osobnik);
 
         protected int RozmiarPopulacji { get; set; }
-        protected float PstwoMutacji { get; set; }
+        protected float PrawdopodobienstwoMutacji { get; set; }
 
 
         public TypOsobnika Szukaj(int liczbaIteracji)
@@ -54,6 +54,7 @@ namespace GeneticAlgorithms
             return Koniec(true);
         }
 
+        #region Losowanie do krzyzowania
         void LosowanieDoKrzyzowania(float[] przystosowanie, int[] rodzice)
         {
             Random r = new Random();
@@ -106,5 +107,6 @@ namespace GeneticAlgorithms
             } while (a < b);
             return a;
         }
+        #endregion
     }
 }
