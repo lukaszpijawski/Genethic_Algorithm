@@ -8,19 +8,23 @@ namespace GeneticAlgorithms
 {
     public abstract class AlgorytmGenetyczny<TypOsobnika>
     {
-        protected abstract TypOsobnika[] LosowaPopulacja(int rozmiar);
+        #region Abstract protected methods
+        protected abstract TypOsobnika[] GenerujLosowaPopulacje(int rozmiar);
         protected abstract TypOsobnika Koniec(bool bestPossible = false);
-        protected abstract float Przystosowanie(TypOsobnika osobnik);
+        protected abstract float ObliczPrzystosowanie(TypOsobnika osobnik);
         protected abstract void Krzyzuj(TypOsobnika osobnik1, TypOsobnika osobnik2, out TypOsobnika nowyOsobnik1, out TypOsobnika nowyOsobnik2);
-        protected abstract TypOsobnika Mutacja(TypOsobnika osobnik);
+        protected abstract TypOsobnika Mutuj(TypOsobnika osobnik);
+        #endregion
 
+        #region Properties
         protected int RozmiarPopulacji { get; set; }
         protected float PrawdopodobienstwoMutacji { get; set; }
+        #endregion
 
-
+        #region Szukaj
         public TypOsobnika Szukaj(int liczbaIteracji)
         {
-            TypOsobnika[] populacja = LosowaPopulacja(RozmiarPopulacji);
+            TypOsobnika[] populacja = GenerujLosowaPopulacje(RozmiarPopulacji);
             float[] przystosowanie = new float[RozmiarPopulacji];
             int[] rodzice = new int[RozmiarPopulacji];
 
@@ -28,7 +32,7 @@ namespace GeneticAlgorithms
             {
                 for (int i = 0; i < RozmiarPopulacji; i++)
                 {
-                    przystosowanie[i] = Przystosowanie(populacja[i]);
+                    przystosowanie[i] = ObliczPrzystosowanie(populacja[i]);
                 }
 
                 TypOsobnika wynik = Koniec();
@@ -46,13 +50,14 @@ namespace GeneticAlgorithms
                 }
                 for (int i = 0; i < nowaPopulacja.Length; i++)
                 {
-                    nowaPopulacja[i] = Mutacja(nowaPopulacja[i]);
+                    nowaPopulacja[i] = Mutuj(nowaPopulacja[i]);
                 }
                 populacja = nowaPopulacja;
                 liczbaIteracji--;
             }
             return Koniec(true);
         }
+#endregion
 
         #region Losowanie do krzyzowania
         void LosowanieDoKrzyzowania(float[] przystosowanie, int[] rodzice)
