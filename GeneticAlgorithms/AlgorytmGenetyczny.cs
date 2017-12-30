@@ -8,9 +8,11 @@ namespace GeneticAlgorithms
 {
     public abstract class AlgorytmGenetyczny<TypOsobnika>
     {
+        protected TypOsobnika najlepszyOsobnik;
+        
         #region Abstract protected methods
         protected abstract TypOsobnika[] GenerujLosowaPopulacje(int rozmiar);
-        protected abstract TypOsobnika Koniec(bool bestPossible = false);
+        protected abstract TypOsobnika Koniec(bool najlepszyMozliwy = false);
         protected abstract float ObliczPrzystosowanie(TypOsobnika osobnik);
         protected abstract void Krzyzuj(TypOsobnika osobnik1, TypOsobnika osobnik2, out TypOsobnika nowyOsobnik1, out TypOsobnika nowyOsobnik2);
         protected abstract TypOsobnika Mutuj(TypOsobnika osobnik);
@@ -27,13 +29,21 @@ namespace GeneticAlgorithms
             TypOsobnika[] populacja = GenerujLosowaPopulacje(RozmiarPopulacji);
             float[] przystosowanie = new float[RozmiarPopulacji];
             int[] rodzice = new int[RozmiarPopulacji];
+            float maksymalnePrzystosowanie = 0;
+            int indeksNajlepszegoOsobnika = 0;
 
             while (liczbaIteracji > 0)
             {
                 for (int i = 0; i < RozmiarPopulacji; i++)
                 {
                     przystosowanie[i] = ObliczPrzystosowanie(populacja[i]);
+                    if (przystosowanie[i] > maksymalnePrzystosowanie)
+                    {
+                        maksymalnePrzystosowanie = przystosowanie[i];
+                        indeksNajlepszegoOsobnika = i;
+                    }
                 }
+                najlepszyOsobnik = populacja[indeksNajlepszegoOsobnika];
 
                 TypOsobnika wynik = Koniec();
                 if (wynik != null)

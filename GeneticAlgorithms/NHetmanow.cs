@@ -1,19 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace GeneticAlgorithms
-{
+{    
     public class NHetmanow : AlgorytmGenetyczny<byte[]>
     {
+        #region private fields
         private static int _liczbaHetmanow = 8;
         private const int _domyslnyRozmiarPopulacji = 10;
-        private const float _domyslnePrawdopodobienstwoMutacji = 0.2f;
+        private const float _domyslnePrawdopodobienstwoMutacji = 0.01f;
+        private List<Point<byte>>[,] tablicaSzachowanPoPrzekatnej;
+        PointEqualityComparer<byte> pointEqualityComparer = new PointEqualityComparer<byte>();
+        #endregion
 
         #region Konstruktory
-        public NHetmanow() : this(_liczbaHetmanow, _domyslnyRozmiarPopulacji, _domyslnePrawdopodobienstwoMutacji)
+        public NHetmanow() : this(8, _domyslnyRozmiarPopulacji, _domyslnePrawdopodobienstwoMutacji)
         {
         }
 
@@ -34,12 +39,17 @@ namespace GeneticAlgorithms
             _liczbaHetmanow = liczbaHetmanow;
             RozmiarPopulacji = rozmiarPopulacji;
             PrawdopodobienstwoMutacji = prawdopodobienstwoMutacji;
+            tablicaSzachowanPoPrzekatnej = StworzTabliceSzachowanPoPrzekatnej(_liczbaHetmanow);
         }
         #endregion
 
         protected override byte[] Koniec(bool bestPossible = false)
         {
-            throw new NotImplementedException();
+            if (!bestPossible && Math.Abs(ObliczPrzystosowanie(najlepszyOsobnik) - 1.0f) > 0.05)
+            {
+                return null;
+            }
+            return najlepszyOsobnik;
         }
 
         protected override void Krzyzuj(byte[] osobnik1, byte[] osobnik2, out byte[] nowyOsobnik1, out byte[] nowyOsobnik2)
@@ -68,12 +78,12 @@ namespace GeneticAlgorithms
         
         private List<byte> ZwrocTabliceNumerowKolumn(int rozmiar)
         {
-            List<byte> numeryKolumn = new List<byte>(rozmiar);
+            var numeryKolumn = new List<byte>(rozmiar);
             for (int i = 0; i < rozmiar; i++)
             {
-                numeryKolumn[i] = (byte)(i + 1);
+                numeryKolumn.Add((byte)(i + 1));
             }
-            return numeryKolumn;
+            return numeryKolumn.ToList();
         }
         #endregion
 
@@ -91,7 +101,93 @@ namespace GeneticAlgorithms
 
         protected override float ObliczPrzystosowanie(byte[] osobnik)
         {
-            throw new NotImplementedException();
+            var liczbaSzachowan = ObliczLiczbeSzachowan(osobnik);
+            return 1.0f;
+        }
+
+        private int ObliczLiczbeSzachowan(byte[] osobnik)
+        {
+            int liczbaSzachowan = 0;
+            byte[] tymczasowyOsobnik = osobnik.ToArray();
+            List<Point<byte>> osobnikJakoLista = new List<Point<byte>>(osobnik.Length);
+            for (byte i = 0; i < osobnik.Length; i++)
+            {
+                var pole = new Point<byte> { X = i, Y = osobnik[i] };
+                osobnikJakoLista.Add(pole);
+            }
+
+            liczbaSzachowan += ObliczLiczbeSzachowanPoPrzekatnej(osobnikJakoLista);
+            liczbaSzachowan += ObliczLiczbeSzachowanPoKolumnie(osobnik);
+
+            return liczbaSzachowan;
+        }
+
+        private int ObliczLiczbeSzachowanPoPrzekatnej(List<Point<byte>> osobnikJakoLista)
+        {
+            int liczbaSzachowan = 0;
+            foreach (var hetman in osobnikJakoLista)
+            {
+                liczbaSzachowan += tablicaSzachowanPoPrzekatnej[hetman.X, hetman.Y].Where(a => osobnikJakoLista.Contains(a, pointEqualityComparer)).Count() - 1;
+            }
+
+            return liczbaSzachowan / 2;
+        }
+
+        private int ObliczLiczbeSzachowanPoKolumnie(byte[] osobnik)
+        {
+            int liczbaSzachowan = 0;
+            foreach (var hetman in osobnik)
+            {
+                liczbaSzachowan += osobnik.Where(a => a == hetman).Count() - 1;
+            }
+
+            return liczbaSzachowan / 2;
+        }
+
+        private List<Point<byte>>[,] StworzTabliceSzachowanPoPrzekatnej(int rozmiar)
+        {
+            var rozmiarTablicy = rozmiar * rozmiar;
+            var tablicaSzachowan = new List<Point<byte>>[rozmiar, rozmiar];
+            for (int i = 0; i < tablicaSzachowan.GetLength(0); i++)
+            {
+                for (int j = 0; j < tablicaSzachowan.GetLength(1); j++)
+                {
+                    var lista = new List<Point<byte>>();
+
+                    for (int k = 0; k < rozmiar; k++)
+                    {
+                        var y = j - (i - k);
+                        if (y >= 0 && y < rozmiar)
+                        {
+                            lista.Add(new Point<byte> { X = (byte)k, Y = (byte)y });
+                        }
+                        y = j + (i - k);
+                        if (y >= 0 && y < rozmiar)
+                        {
+                            lista.Add(new Point<byte> { X = (byte)k, Y = (byte)y });
+                        }
+                    }
+
+                    tablicaSzachowan[i, j] = lista.GroupBy(a => new { a.X, a.Y }).Select(a => a.Last()).ToList();
+                }
+            }
+
+            return tablicaSzachowan;
+        }
+
+        private bool CzySaNaPrzekatnej(Point<byte> liczba1, Point<byte> liczba2)
+        {
+            return Math.Abs(liczba1.X - liczba2.X) == Math.Abs(liczba1.Y - liczba2.Y);
+        }
+
+        private bool CzySaWTejSamejLinii(Point<byte> liczba1, Point<byte> liczba2)
+        {
+            return (liczba1.Y == liczba2.Y) || (liczba1.X == liczba2.X);
+        }
+
+        private bool CzySaWTejSamejLinii(byte liczba1, byte liczba2)
+        {
+            return liczba1 == liczba2;
         }
     }
 }

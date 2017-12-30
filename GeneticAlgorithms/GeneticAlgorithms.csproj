@@ -44,6 +44,7 @@
   <ItemGroup>
     <Compile Include="AlgorytmGenetyczny.cs" />
     <Compile Include="NHetmanow.cs" />
+    <Compile Include="Point.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
