@@ -9,16 +9,19 @@ namespace GeneticAlgorithms
 {    
     public class NHetmanow : AlgorytmGenetyczny<byte[]>
     {
-        #region private fields
+        #region Prywatne pola
         private static int _liczbaHetmanow = 8;
-        private const int _domyslnyRozmiarPopulacji = 10;
+        private const int _domyslnyRozmiarPopulacji = 100;
         private const float _domyslnePrawdopodobienstwoMutacji = 0.01f;
-        private List<Point<byte>>[,] tablicaSzachowanPoPrzekatnej;
+        private HashSet<Point<byte>>[,] tablicaSzachowanPoPrzekatnej;
         PointEqualityComparer<byte> pointEqualityComparer = new PointEqualityComparer<byte>();
+        private float _maksymalnaLiczbaSzachowan;
+        private List<byte> _numeryKolumn;
+        private float _epsilon;
         #endregion
 
         #region Konstruktory
-        public NHetmanow() : this(8, _domyslnyRozmiarPopulacji, _domyslnePrawdopodobienstwoMutacji)
+        public NHetmanow() : this(_liczbaHetmanow, _domyslnyRozmiarPopulacji, _domyslnePrawdopodobienstwoMutacji)
         {
         }
 
@@ -39,49 +42,80 @@ namespace GeneticAlgorithms
             _liczbaHetmanow = liczbaHetmanow;
             RozmiarPopulacji = rozmiarPopulacji;
             PrawdopodobienstwoMutacji = prawdopodobienstwoMutacji;
+            _maksymalnaLiczbaSzachowan = (float)(_liczbaHetmanow - 1) * (float)_liczbaHetmanow / 2.0f;
             tablicaSzachowanPoPrzekatnej = StworzTabliceSzachowanPoPrzekatnej(_liczbaHetmanow);
+            _numeryKolumn = ZwrocListeNumerowKolumn(_liczbaHetmanow);
+            _epsilon = 0.6f * (1.0f / _maksymalnaLiczbaSzachowan);
         }
         #endregion
 
+        #region Koniec
         protected override byte[] Koniec(bool bestPossible = false)
         {
-            if (!bestPossible && Math.Abs(ObliczPrzystosowanie(najlepszyOsobnik) - 1.0f) > 0.05)
+            if (!bestPossible && (1.0f - ObliczPrzystosowanie(najlepszyOsobnik)) > _epsilon)
             {
                 return null;
             }
             return najlepszyOsobnik;
         }
+        #endregion
 
+        #region Krzyzuj
         protected override void Krzyzuj(byte[] osobnik1, byte[] osobnik2, out byte[] nowyOsobnik1, out byte[] nowyOsobnik2)
         {
-            throw new NotImplementedException();
+            int indeksPodzialu = ObliczIndeksPodzialu(osobnik1.Length);
+            var wewnetrznyNowyOsobnik1 = new byte[osobnik1.Length];
+            var wewnetrznyNowyOsobnik2 = new byte[osobnik1.Length];
+     
+            for (int i = 0; i <= indeksPodzialu; i++)
+            {
+                wewnetrznyNowyOsobnik1[i] = osobnik1[i];
+                wewnetrznyNowyOsobnik2[i] = osobnik2[i];
+            }
+
+            for (int i = indeksPodzialu + 1; i < osobnik2.Length; i++)
+            {
+                wewnetrznyNowyOsobnik1[i] = osobnik2[i];
+                wewnetrznyNowyOsobnik2[i] = osobnik1[i];
+            }
+                
+            nowyOsobnik1 = wewnetrznyNowyOsobnik1;
+            nowyOsobnik2 = wewnetrznyNowyOsobnik2;
         }
+
+        private int ObliczIndeksPodzialu(int dlugoscOsobnika)
+        {
+            int indeksPodzialu = dlugoscOsobnika / 2 - 1;            
+            return indeksPodzialu;
+        }
+        #endregion
 
         #region Generowanie populacji
         protected override byte[][] GenerujLosowaPopulacje(int rozmiar)
         {
-            Random generatorLiczbLosowych = new Random();
-            List<byte> numeryKolumn = ZwrocTabliceNumerowKolumn(_liczbaHetmanow);
+            var generatorLiczbLosowych = new Random();            
             byte[][] losowaPopulacja = new byte[rozmiar][];
             for (int i = 0; i < rozmiar; i++)
             {
                 losowaPopulacja[i] = new byte[_liczbaHetmanow];
-                for (int j = 0; j < losowaPopulacja[i].Length; j++)
+                var numeryKolumn = new List<byte>(_numeryKolumn);
+                for (int j = 0; j < losowaPopulacja[i].Length; j++)                
                 {
                     var indeks = generatorLiczbLosowych.Next(0, numeryKolumn.Count - 1);
                     losowaPopulacja[i][j] = numeryKolumn[indeks];
                     numeryKolumn.RemoveAt(indeks);
                 }
-            }
+            }            
+
             return losowaPopulacja;
         }
         
-        private List<byte> ZwrocTabliceNumerowKolumn(int rozmiar)
+        private List<byte> ZwrocListeNumerowKolumn(int rozmiar)
         {
             var numeryKolumn = new List<byte>(rozmiar);
             for (int i = 0; i < rozmiar; i++)
             {
-                numeryKolumn.Add((byte)(i + 1));
+                numeryKolumn.Add((byte)(i));
             }
             return numeryKolumn.ToList();
         }
@@ -91,25 +125,35 @@ namespace GeneticAlgorithms
         protected override byte[] Mutuj(byte[] osobnik)
         {
             Random generatorLiczbLosowych = new Random();
-            List<byte> numeryKolumn = ZwrocTabliceNumerowKolumn(_liczbaHetmanow);
-            var indeks = generatorLiczbLosowych.Next(0, osobnik.Length - 1);
-            var wartosc = numeryKolumn[generatorLiczbLosowych.Next(0, numeryKolumn.Count - 1)];
-            osobnik[indeks] = wartosc;
+            var numeryKolumn = _numeryKolumn;
+            if (generatorLiczbLosowych.NextDouble() <= PrawdopodobienstwoMutacji)
+            {
+                var indeks = generatorLiczbLosowych.Next(0, osobnik.Length - 1);
+                var wartosc = numeryKolumn[generatorLiczbLosowych.Next(0, numeryKolumn.Count - 1)];
+                osobnik[indeks] = wartosc;
+            }            
             return osobnik;
         }
         #endregion
 
+        #region Obliczanie przystosowania
         protected override float ObliczPrzystosowanie(byte[] osobnik)
         {
             var liczbaSzachowan = ObliczLiczbeSzachowan(osobnik);
-            return 1.0f;
+            if (liczbaSzachowan == 0)
+            {
+                return 1.0f;
+            }
+            return ((float)_maksymalnaLiczbaSzachowan - (float)liczbaSzachowan) / (float)_maksymalnaLiczbaSzachowan;
         }
+        #endregion
 
+        #region Obliczanie liczby szachowań
         private int ObliczLiczbeSzachowan(byte[] osobnik)
         {
             int liczbaSzachowan = 0;
             byte[] tymczasowyOsobnik = osobnik.ToArray();
-            List<Point<byte>> osobnikJakoLista = new List<Point<byte>>(osobnik.Length);
+            var osobnikJakoLista = new HashSet<Point<byte>>();
             for (byte i = 0; i < osobnik.Length; i++)
             {
                 var pole = new Point<byte> { X = i, Y = osobnik[i] };
@@ -122,7 +166,7 @@ namespace GeneticAlgorithms
             return liczbaSzachowan;
         }
 
-        private int ObliczLiczbeSzachowanPoPrzekatnej(List<Point<byte>> osobnikJakoLista)
+        private int ObliczLiczbeSzachowanPoPrzekatnej(HashSet<Point<byte>> osobnikJakoLista)
         {
             int liczbaSzachowan = 0;
             foreach (var hetman in osobnikJakoLista)
@@ -144,15 +188,15 @@ namespace GeneticAlgorithms
             return liczbaSzachowan / 2;
         }
 
-        private List<Point<byte>>[,] StworzTabliceSzachowanPoPrzekatnej(int rozmiar)
+
+        private HashSet<Point<byte>>[,] StworzTabliceSzachowanPoPrzekatnej(int rozmiar)
         {
-            var rozmiarTablicy = rozmiar * rozmiar;
-            var tablicaSzachowan = new List<Point<byte>>[rozmiar, rozmiar];
+            var tablicaSzachowan = new HashSet<Point<byte>>[rozmiar, rozmiar];
             for (int i = 0; i < tablicaSzachowan.GetLength(0); i++)
             {
                 for (int j = 0; j < tablicaSzachowan.GetLength(1); j++)
                 {
-                    var lista = new List<Point<byte>>();
+                    var lista = new HashSet<Point<byte>>();
 
                     for (int k = 0; k < rozmiar; k++)
                     {
@@ -166,9 +210,8 @@ namespace GeneticAlgorithms
                         {
                             lista.Add(new Point<byte> { X = (byte)k, Y = (byte)y });
                         }
-                    }
-
-                    tablicaSzachowan[i, j] = lista.GroupBy(a => new { a.X, a.Y }).Select(a => a.Last()).ToList();
+                    }                    
+                    tablicaSzachowan[i, j] = new HashSet<Point<byte>>(lista.GroupBy(a => new { a.X, a.Y }).Select(a => a.Last()));
                 }
             }
 
@@ -189,5 +232,7 @@ namespace GeneticAlgorithms
         {
             return liczba1 == liczba2;
         }
+        #endregion
+
     }
 }

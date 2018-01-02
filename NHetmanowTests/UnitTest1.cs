@@ -132,6 +132,6 @@ namespace NHetmanowTests
             var lista = new byte[8];
             //assert
             Assert.AreEqual(8, lista.Length);
-        }
+        }        
     }
 }

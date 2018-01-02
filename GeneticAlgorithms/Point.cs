@@ -21,7 +21,7 @@ namespace GeneticAlgorithms
 
         public int GetHashCode(Point<T> obj)
         {
-            return obj.GetHashCode();
+            return -2;
         }
     }
 }

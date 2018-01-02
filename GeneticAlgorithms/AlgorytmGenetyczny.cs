@@ -6,11 +6,13 @@ using System.Threading.Tasks;
 
 namespace GeneticAlgorithms
 {
-    public abstract class AlgorytmGenetyczny<TypOsobnika>
+    public abstract class AlgorytmGenetyczny<TypOsobnika> where TypOsobnika : IList<byte>
     {
+        #region Abstrakcyjne chronione pola
         protected TypOsobnika najlepszyOsobnik;
-        
-        #region Abstract protected methods
+        #endregion
+
+        #region Abstrakcyjne chronione metody
         protected abstract TypOsobnika[] GenerujLosowaPopulacje(int rozmiar);
         protected abstract TypOsobnika Koniec(bool najlepszyMozliwy = false);
         protected abstract float ObliczPrzystosowanie(TypOsobnika osobnik);
@@ -18,7 +20,7 @@ namespace GeneticAlgorithms
         protected abstract TypOsobnika Mutuj(TypOsobnika osobnik);
         #endregion
 
-        #region Properties
+        #region Własności
         protected int RozmiarPopulacji { get; set; }
         protected float PrawdopodobienstwoMutacji { get; set; }
         #endregion
@@ -26,7 +28,7 @@ namespace GeneticAlgorithms
         #region Szukaj
         public TypOsobnika Szukaj(int liczbaIteracji)
         {
-            TypOsobnika[] populacja = GenerujLosowaPopulacje(RozmiarPopulacji);
+            TypOsobnika[] populacja = GenerujLosowaPopulacje(RozmiarPopulacji);            
             float[] przystosowanie = new float[RozmiarPopulacji];
             int[] rodzice = new int[RozmiarPopulacji];
             float maksymalnePrzystosowanie = 0;
@@ -43,14 +45,13 @@ namespace GeneticAlgorithms
                         indeksNajlepszegoOsobnika = i;
                     }
                 }
-                najlepszyOsobnik = populacja[indeksNajlepszegoOsobnika];
 
+                najlepszyOsobnik = populacja[indeksNajlepszegoOsobnika];
                 TypOsobnika wynik = Koniec();
                 if (wynik != null)
                 {
                     return wynik;
                 }
-
                 LosowanieDoKrzyzowania(przystosowanie, rodzice);
                 TypOsobnika[] nowaPopulacja = new TypOsobnika[RozmiarPopulacji];
                 for (int i = 0; i < rodzice.Length; i += 2)
@@ -67,21 +68,24 @@ namespace GeneticAlgorithms
             }
             return Koniec(true);
         }
-#endregion
+        #endregion
 
         #region Losowanie do krzyzowania
         void LosowanieDoKrzyzowania(float[] przystosowanie, int[] rodzice)
         {
             Random r = new Random();
             float[] progi = Progi(przystosowanie);
-            for (int i = 0; i < przystosowanie.Length; i++)
+            var iloscElementow = przystosowanie.Length;
+            for (int i = 0; i < iloscElementow - 1; i++)
             {
                 rodzice[i] = Indeks((float)r.NextDouble(), progi);
+                int liczbaIteracji = 100;
                 do
                 {
                     rodzice[i + 1] = Indeks((float)r.NextDouble(), progi);
+                    liczbaIteracji--;
                 }
-                while (rodzice[i] == rodzice[i + 1]);
+                while (rodzice[i] == rodzice[i + 1] && liczbaIteracji > 0);
             }
         }
 
@@ -123,5 +127,33 @@ namespace GeneticAlgorithms
             return a;
         }
         #endregion
+
+        
     }
+
+    #region TypOsobnikaIEqualityComparer
+    public class TypOsobnikaIEqualityComparer<T> : IEqualityComparer<T> where T : IList<byte>
+    {
+        public bool Equals(T x, T y)
+        {
+            if (x.Count() != y.Count())
+            {
+                return false;
+            }
+            for (int i = 0; i < x.Count(); i++)
+            {
+                if (x[i] != y[i])
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public int GetHashCode(T obj)
+        {
+            return -1;
+        }
+    }
+    #endregion
 }
