@@ -120,18 +120,6 @@ namespace NHetmanowTests
             //assert
             var el = lista[1, 1];
             CollectionAssert.AreEqual(oczekiwanaLista, el);
-        }
-
-        [TestMethod]
-        public void ObliczLiczbeSzachowanTestMethod()
-        {
-            //arrange
-            int rozmiar = 8;
-
-            //act
-            var lista = new byte[8];
-            //assert
-            Assert.AreEqual(8, lista.Length);
-        }        
+        }             
     }
 }

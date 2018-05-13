@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace GeneticAlgorithms
 {
-    public abstract class AlgorytmGenetyczny<TypOsobnika> where TypOsobnika : IList<byte>
+    public abstract class AlgorytmGenetyczny<TypOsobnika>
     {
         #region Abstrakcyjne chronione pola
         protected TypOsobnika najlepszyOsobnik;
@@ -74,9 +74,8 @@ namespace GeneticAlgorithms
         void LosowanieDoKrzyzowania(float[] przystosowanie, int[] rodzice)
         {
             Random r = new Random();
-            float[] progi = Progi(przystosowanie);
-            var iloscElementow = przystosowanie.Length;
-            for (int i = 0; i < iloscElementow - 1; i++)
+            float[] progi = Progi(przystosowanie);            
+            for (int i = 0; i < przystosowanie.Length - 1; i++)
             {
                 rodzice[i] = Indeks((float)r.NextDouble(), progi);
                 int liczbaIteracji = 100;
@@ -126,9 +125,7 @@ namespace GeneticAlgorithms
             } while (a < b);
             return a;
         }
-        #endregion
-
-        
+        #endregion        
     }
 
     #region TypOsobnikaIEqualityComparer

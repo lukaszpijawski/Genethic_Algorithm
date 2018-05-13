@@ -126,7 +126,7 @@ namespace GeneticAlgorithms
         {
             _liczbaHetmanow = 8;
             NHetmanow nHetmanow = new NHetmanow(_liczbaHetmanow, 100, 0.01f);
-            var wynik = nHetmanow.Szukaj(100);
+            var wynik = nHetmanow.Szukaj(1000);
             Console.WriteLine("Przystosowanie wyniku: " + ObliczPrzystosowanie(wynik));
             WyswietlOsobnika(wynik);
             Console.WriteLine();

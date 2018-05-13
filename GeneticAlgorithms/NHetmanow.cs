@@ -43,7 +43,7 @@ namespace GeneticAlgorithms
             RozmiarPopulacji = rozmiarPopulacji;
             PrawdopodobienstwoMutacji = prawdopodobienstwoMutacji;
             _maksymalnaLiczbaSzachowan = (float)(_liczbaHetmanow - 1) * (float)_liczbaHetmanow / 2.0f;
-            tablicaSzachowanPoPrzekatnej = StworzTabliceSzachowanPoPrzekatnej(_liczbaHetmanow);
+            //tablicaSzachowanPoPrzekatnej = StworzTabliceSzachowanPoPrzekatnej(_liczbaHetmanow);
             _numeryKolumn = ZwrocListeNumerowKolumn(_liczbaHetmanow);
             _epsilon = 0.6f * (1.0f / _maksymalnaLiczbaSzachowan);
         }
@@ -63,7 +63,8 @@ namespace GeneticAlgorithms
         #region Krzyzuj
         protected override void Krzyzuj(byte[] osobnik1, byte[] osobnik2, out byte[] nowyOsobnik1, out byte[] nowyOsobnik2)
         {
-            int indeksPodzialu = ObliczIndeksPodzialu(osobnik1.Length);
+            Random rand = new Random();
+            int indeksPodzialu = rand.Next(0, osobnik1.Length);//ObliczIndeksPodzialu(osobnik1.Length);
             var wewnetrznyNowyOsobnik1 = new byte[osobnik1.Length];
             var wewnetrznyNowyOsobnik2 = new byte[osobnik1.Length];
      
@@ -153,25 +154,29 @@ namespace GeneticAlgorithms
         {
             int liczbaSzachowan = 0;
             byte[] tymczasowyOsobnik = osobnik.ToArray();
-            var osobnikJakoLista = new HashSet<Point<byte>>();
+            var osobnikJakoHashSet = new HashSet<Point<byte>>();
             for (byte i = 0; i < osobnik.Length; i++)
             {
                 var pole = new Point<byte> { X = i, Y = osobnik[i] };
-                osobnikJakoLista.Add(pole);
+                osobnikJakoHashSet.Add(pole);
             }
 
-            liczbaSzachowan += ObliczLiczbeSzachowanPoPrzekatnej(osobnikJakoLista);
+            liczbaSzachowan += ObliczLiczbeSzachowanPoPrzekatnej(osobnikJakoHashSet);
             liczbaSzachowan += ObliczLiczbeSzachowanPoKolumnie(osobnik);
 
             return liczbaSzachowan;
         }
 
-        private int ObliczLiczbeSzachowanPoPrzekatnej(HashSet<Point<byte>> osobnikJakoLista)
+        private int ObliczLiczbeSzachowanPoPrzekatnej(HashSet<Point<byte>> osobnikJakoHashSet)
         {
             int liczbaSzachowan = 0;
-            foreach (var hetman in osobnikJakoLista)
+            foreach (var hetman in osobnikJakoHashSet)
             {
-                liczbaSzachowan += tablicaSzachowanPoPrzekatnej[hetman.X, hetman.Y].Where(a => osobnikJakoLista.Contains(a, pointEqualityComparer)).Count() - 1;
+                foreach (var hetman2 in osobnikJakoHashSet)
+                {
+                    liczbaSzachowan += CzySaNaPrzekatnej(hetman, hetman2) ? 1 : 0;
+                }
+                //liczbaSzachowan += tablicaSzachowanPoPrzekatnej[hetman.X, hetman.Y].Where(a => osobnikJakoHashSet.Contains(a, pointEqualityComparer)).Count() - 1;
             }
 
             return liczbaSzachowan / 2;
